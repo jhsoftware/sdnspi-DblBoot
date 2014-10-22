@@ -6,7 +6,7 @@ namespace dbl_boot
 {
     public class DblPlugin : IGetHostPlugIn
     {
-        internal const string MyTitle = "Domain block list - BOOT";
+        internal const string MyTitle = "Domain blacklist BOOT";
 
         private MyConfig MyCfg;
         private IPAddress MyCfgIPv4, MyCfgIPv6;
