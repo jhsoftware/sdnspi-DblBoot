@@ -15,6 +15,7 @@ namespace dbl_boot
             if (string.IsNullOrEmpty(config)) return;
             MyConfig cfg = MyConfig.DeSerialize(config);
             txtDataFile.Text = cfg.DataFile;
+            chkMonitor.Checked = cfg.Monitor;
             chkA.Checked = !string.IsNullOrEmpty(cfg.IPv4);
             txtIPv4.Text = cfg.IPv4;
             chkAAAA.Checked = !string.IsNullOrEmpty(cfg.IPv6);
@@ -28,6 +29,7 @@ namespace dbl_boot
         {
             MyConfig cfg = new MyConfig();
             cfg.DataFile = txtDataFile.Text.Trim();
+            cfg.Monitor = chkMonitor.Checked;
             cfg.IPv4 = chkA.Checked ? txtIPv4.Text.Trim() :"" ;
             cfg.IPv6 =chkAAAA.Checked ? txtIPv6.Text.Trim() : "";
             cfg.TXT =chkTXT.Checked ? txtTXT.Text.Trim(): "";

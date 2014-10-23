@@ -13,6 +13,9 @@ namespace dbl_boot
         Dictionary<DomainName, object> Domains;
         private DNSRRType RecTypeA = DNSRRType.Parse("A");
 
+        private System.IO.FileSystemWatcher fMon;
+        private DateTime LastReload;
+
         public event IPlugInBase.LogLineEventHandler LogLine;
         public event IPlugInBase.SaveConfigEventHandler SaveConfig;
         public event IPlugInBase.AsyncErrorEventHandler AsyncError;
@@ -84,33 +87,70 @@ namespace dbl_boot
 
         public void StartService()
         {
-            Domains = new Dictionary<DomainName,object>();
+            LoadData();
 
-            var sr = new System.IO.StreamReader(MyCfg.DataFile, true);
-            string x;
-            int i;
-            DomainName d=null;
-            char[] ws = {' ', '\t'};
-
-            while (!sr.EndOfStream)
-            {
-                x = sr.ReadLine();
-                if (!x.StartsWith(@"PRIMARY", StringComparison.InvariantCultureIgnoreCase)) continue;
-                x = x.Substring(7).TrimStart();
-                i = x.IndexOfAny(ws);
-                if (i < 0) continue;
-                x = x.Substring(0, i).ToLowerInvariant();
-                if(! DomainName.TryParse(x,ref d)) continue;
-                if(Domains.ContainsKey(d)) continue;
-                Domains.Add(d,null);
+            if (MyCfg.Monitor) { 
+              fMon = new System.IO.FileSystemWatcher();
+              fMon.Path = System.IO.Path.GetDirectoryName(MyCfg.DataFile);
+              fMon.Filter = System.IO.Path.GetFileName(MyCfg.DataFile);
+              fMon.IncludeSubdirectories = false;
+              fMon.NotifyFilter = System.IO.NotifyFilters.LastWrite;
+              fMon.EnableRaisingEvents = true;
+              fMon.Changed += fMon_Changed;
             }
-            sr.Close();
-            LogLine.Invoke("Loaded " + Domains.Count.ToString() + " domains");
+        }
+
+        private void LoadData()
+        {
+            try
+            {
+                Domains = new Dictionary<DomainName, object>();
+
+                var sr = new System.IO.StreamReader(MyCfg.DataFile, true);
+                string x;
+                int i;
+                DomainName d = null;
+                char[] ws = { ' ', '\t' };
+
+                while (!sr.EndOfStream)
+                {
+                    x = sr.ReadLine();
+                    if (!x.StartsWith(@"PRIMARY", StringComparison.InvariantCultureIgnoreCase)) continue;
+                    x = x.Substring(7).TrimStart();
+                    i = x.IndexOfAny(ws);
+                    if (i < 0) continue;
+                    x = x.Substring(0, i).ToLowerInvariant();
+                    if (!DomainName.TryParse(x, ref d)) continue;
+                    if (Domains.ContainsKey(d)) continue;
+                    Domains.Add(d, null);
+                }
+                sr.Close();
+                LastReload = DateTime.UtcNow;
+                LogLine.Invoke("Loaded " + Domains.Count.ToString() + " domains");
+            }
+            catch (Exception ex)
+            {
+                Domains=new Dictionary<DomainName, object>();
+                AsyncError.Invoke(ex);
+            }
+        }
+
+        void fMon_Changed(object sender, System.IO.FileSystemEventArgs e)
+        {
+            if (DateTime.UtcNow.Subtract(LastReload).TotalSeconds < 5) return;
+            LogLine.Invoke(@"Data file update detected - reloading");
+            LoadData();
         }
 
         public void StopService()
         {
-            return;
+            if (MyCfg.Monitor)
+            {
+                fMon.EnableRaisingEvents = false;
+                fMon.Changed -= fMon_Changed;
+                fMon = null;
+            }
+            Domains = null;
         }
 
         public void LookupReverse(IDNSRequest req, ref DomainName resultName, ref int resultTTL)

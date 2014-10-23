@@ -5,6 +5,7 @@ namespace dbl_boot
     class MyConfig
     {
         internal string DataFile = "";
+        internal bool Monitor = false;
         internal string IPv4 = "";
         internal string IPv6 = "";
         internal string TXT = "";
@@ -12,18 +13,35 @@ namespace dbl_boot
 
         internal string Serialize()
         {
-            return "1|" + PipeEncode(DataFile) + "|" + PipeEncode(IPv4) + "|" + PipeEncode(IPv6) + "|" + PipeEncode(TXT) + "|" + TTL.ToString();
+            return "2|" + PipeEncode(DataFile) + "|" + (Monitor ? "T" : "F") + "|" + PipeEncode(IPv4) + "|" + PipeEncode(IPv6) + "|" + PipeEncode(TXT) + "|" + TTL.ToString();
         }
 
         internal static MyConfig DeSerialize(string x)
         {
-            if (PipeRead(ref x) != "1") throw new ArgumentException("Invalid configuration data version");
             var rv = new MyConfig();
-            rv.DataFile = PipeRead(ref x);
-            rv.IPv4 = PipeRead(ref x);
-            rv.IPv6 = PipeRead(ref x);
-            rv.TXT = PipeRead(ref x);
-            rv.TTL = int.Parse(PipeRead(ref x));
+            int v = int.Parse(PipeRead(ref x));
+            if (v == 1)
+            {
+                rv.DataFile = PipeRead(ref x);
+                rv.Monitor = false; //not part of v. 1 config
+                rv.IPv4 = PipeRead(ref x);
+                rv.IPv6 = PipeRead(ref x);
+                rv.TXT = PipeRead(ref x);
+                rv.TTL = int.Parse(PipeRead(ref x));
+            }
+            else if (v == 2)
+            {
+                rv.DataFile = PipeRead(ref x);
+                rv.Monitor = (PipeRead(ref x) == "T");
+                rv.IPv4 = PipeRead(ref x);
+                rv.IPv6 = PipeRead(ref x);
+                rv.TXT = PipeRead(ref x);
+                rv.TTL = int.Parse(PipeRead(ref x));
+            }
+            else
+            {
+                throw new ArgumentException("Invalid configuration data version");
+            }
             return rv;
         }
 
