@@ -17,10 +17,8 @@ namespace dbl_boot
     private System.IO.FileSystemWatcher fMon;
     private DateTime LastReload;
 
-    public event IPlugInBase.LogLineEventHandler LogLine;
-    public event IPlugInBase.SaveConfigEventHandler SaveConfig;
-    public event IPlugInBase.AsyncErrorEventHandler AsyncError;
-
+    private IHost _Host;
+    public IHost Host { get => _Host; set => _Host = value; }
 
     public IPlugInBase.PlugInTypeInfo GetPlugInTypeInfo()
     {
@@ -79,10 +77,9 @@ namespace dbl_boot
       return false;
     }
 
-    public void StartService()
+    Task IPlugInBase.StartService()
     {
       LoadData();
-
       if (MyCfg.Monitor)
       {
         fMon = new System.IO.FileSystemWatcher();
@@ -93,6 +90,7 @@ namespace dbl_boot
         fMon.EnableRaisingEvents = true;
         fMon.Changed += fMon_Changed;
       }
+      return Task.CompletedTask;
     }
 
     private void LoadData()
@@ -121,19 +119,19 @@ namespace dbl_boot
         }
         sr.Close();
         LastReload = DateTime.UtcNow;
-        LogLine.Invoke("Loaded " + Domains.Count.ToString() + " domains");
+        Host.LogLine("Loaded " + Domains.Count.ToString() + " domains");
       }
       catch (Exception ex)
       {
         Domains = new Dictionary<DomName, object>();
-        AsyncError.Invoke(ex);
+        Host.AsyncError(ex);
       }
     }
 
     void fMon_Changed(object sender, System.IO.FileSystemEventArgs e)
     {
       if (DateTime.UtcNow.Subtract(LastReload).TotalSeconds < 5) return;
-      LogLine.Invoke(@"Data file update detected - reloading");
+      Host.LogLine(@"Data file update detected - reloading");
       LoadData();
     }
 
@@ -163,6 +161,10 @@ namespace dbl_boot
       return null;
     }
 
+    Task<object> IPlugInBase.Signal(int code, object data)
+    {
+      return Task.FromResult<object>(null);
+    }
   }
 
 }
