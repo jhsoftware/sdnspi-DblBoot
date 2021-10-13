@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace dbl_boot
 {
-  public class DblPlugin : IGetHostPlugIn
+  public class DblPlugin : ILookupHost, ILookupTXT, IOptionsUI
   {
     internal const string MyTitle = "Domain blacklist BOOT";
 
@@ -36,25 +36,25 @@ namespace dbl_boot
       if (!string.IsNullOrEmpty(MyCfg.IPv6)) MyCfgIPv6 = SdnsIP.Parse(MyCfg.IPv6);
     }
 
-    public Task<IGetHostPlugIn.Result<SdnsIP>> Lookup(IDNSRequest req)
+    public Task<LookupResult<SdnsIP>> LookupHost(DomName name,bool ipv6, IDNSRequest req)
     {
-      return Task.FromResult(Lookup2(req));
+      return Task.FromResult(Lookup2(name,ipv6,req));
     }
-    private IGetHostPlugIn.Result<SdnsIP> Lookup2(IDNSRequest req)
+    private LookupResult<SdnsIP> Lookup2(DomName name, bool ipv6, IDNSRequest req)
     {
-      if (req.QType == DNSRecType.A && MyCfgIPv4 !=null && Match(req.QName)) return new IGetHostPlugIn.Result<SdnsIP> { Value = MyCfgIPv4, TTL = MyCfg.TTL };
-      if (req.QType == DNSRecType.AAAA && MyCfgIPv6 != null && Match(req.QName)) return new IGetHostPlugIn.Result<SdnsIP> { Value = MyCfgIPv6, TTL = MyCfg.TTL };
+      if (!ipv6 && MyCfgIPv4 !=null && Match(name)) return new LookupResult<SdnsIP> { Value = MyCfgIPv4, TTL = MyCfg.TTL };
+      if (ipv6 && MyCfgIPv6 != null && Match(name)) return new LookupResult<SdnsIP> { Value = MyCfgIPv6, TTL = MyCfg.TTL };
       return null;
     }
 
-    public Task<IGetHostPlugIn.Result<string>> LookupTXT(IDNSRequest req)
+    public Task<LookupResult<string>> LookupTXT(DomName name, IDNSRequest req)
     {
-      return Task.FromResult(LookupTXT2(req));
+      return Task.FromResult(LookupTXT2(name,req));
     }
-    public IGetHostPlugIn.Result<string> LookupTXT2(IDNSRequest req)
+    public LookupResult<string> LookupTXT2(DomName name,IDNSRequest req)
     {
-      if (string.IsNullOrEmpty(MyCfg.TXT) || !Match(req.QName)) return null;
-      return new IGetHostPlugIn.Result<string> { Value = MyCfg.TXT, TTL = MyCfg.TTL };
+      if (string.IsNullOrEmpty(MyCfg.TXT) || !Match(name)) return null;
+      return new LookupResult<string> { Value = MyCfg.TXT, TTL = MyCfg.TTL };
     }
 
     private bool Match(DomName d)
@@ -146,11 +146,6 @@ namespace dbl_boot
       Domains = null;
     }
 
-    public Task<IGetHostPlugIn.Result<DomName>> LookupReverse(SdnsIP ip, IDNSRequest req)
-    {
-      return Task.FromResult<IGetHostPlugIn.Result<DomName>>(null);
-    }
-
     public void LoadState(string state)
     {
       return;
@@ -161,10 +156,6 @@ namespace dbl_boot
       return null;
     }
 
-    Task<object> IPlugInBase.Signal(int code, object data)
-    {
-      return Task.FromResult<object>(null);
-    }
   }
 
 }
