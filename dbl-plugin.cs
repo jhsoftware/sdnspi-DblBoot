@@ -20,12 +20,12 @@ namespace dbl_boot
     private IHost _Host;
     public IHost Host { get => _Host; set => _Host = value; }
 
-    public IPlugInBase.PlugInTypeInfo GetPlugInTypeInfo()
+    public IPlugInBase.PlugInTypeInfo GetTypeInfo()
     {
       var x = new IPlugInBase.PlugInTypeInfo();
       x.Name = MyTitle;
       x.Description = @"Blocks domain names based on a BOOT file";
-      x.InfoURL = "https://simpledns.plus/kb/172/domain-blacklist-boot-plug-in";
+      x.InfoURL = "https://simpledns.plus/plugin-dblboot";
       return x;
     }
 
@@ -36,22 +36,22 @@ namespace dbl_boot
       if (!string.IsNullOrEmpty(MyCfg.IPv6)) MyCfgIPv6 = SdnsIP.Parse(MyCfg.IPv6);
     }
 
-    public Task<LookupResult<SdnsIP>> LookupHost(DomName name,bool ipv6, IDNSRequest req)
+    public Task<LookupResult<SdnsIP>> LookupHost(DomName name,bool ipv6, IRequestContext req)
     {
       return Task.FromResult(Lookup2(name,ipv6,req));
     }
-    private LookupResult<SdnsIP> Lookup2(DomName name, bool ipv6, IDNSRequest req)
+    private LookupResult<SdnsIP> Lookup2(DomName name, bool ipv6, IRequestContext req)
     {
       if (!ipv6 && MyCfgIPv4 !=null && Match(name)) return new LookupResult<SdnsIP> { Value = MyCfgIPv4, TTL = MyCfg.TTL };
       if (ipv6 && MyCfgIPv6 != null && Match(name)) return new LookupResult<SdnsIP> { Value = MyCfgIPv6, TTL = MyCfg.TTL };
       return null;
     }
 
-    public Task<LookupResult<string>> LookupTXT(DomName name, IDNSRequest req)
+    public Task<LookupResult<string>> LookupTXT(DomName name, IRequestContext req)
     {
       return Task.FromResult(LookupTXT2(name,req));
     }
-    public LookupResult<string> LookupTXT2(DomName name,IDNSRequest req)
+    public LookupResult<string> LookupTXT2(DomName name,IRequestContext req)
     {
       if (string.IsNullOrEmpty(MyCfg.TXT) || !Match(name)) return null;
       return new LookupResult<string> { Value = MyCfg.TXT, TTL = MyCfg.TTL };

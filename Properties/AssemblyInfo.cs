@@ -10,7 +10,7 @@ using System.Runtime.InteropServices;
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("JH Software ApS")]
 [assembly: AssemblyProduct("Simple DNS Plus")]
-[assembly: AssemblyCopyright("")]
+[assembly: AssemblyCopyright("Copyright © 2021 JH Software ApS")]
 [assembly: AssemblyTrademark("Simple DNS Plus")]
 [assembly: AssemblyCulture("")]
 
