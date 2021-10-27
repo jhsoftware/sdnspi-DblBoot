@@ -20,9 +20,9 @@ namespace dbl_boot
     private IHost _Host;
     public IHost Host { get => _Host; set => _Host = value; }
 
-    public IPlugInBase.PlugInTypeInfo GetTypeInfo()
+    public TypeInfo GetTypeInfo()
     {
-      var x = new IPlugInBase.PlugInTypeInfo();
+      var x = new TypeInfo();
       x.Name = MyTitle;
       x.Description = @"Blocks domain names based on a BOOT file";
       x.InfoURL = "https://simpledns.plus/plugin-dblboot";
@@ -144,16 +144,6 @@ namespace dbl_boot
         fMon = null;
       }
       Domains = null;
-    }
-
-    public void LoadState(string state)
-    {
-      return;
-    }
-
-    public string SaveState()
-    {
-      return null;
     }
 
   }
